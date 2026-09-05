@@ -1,0 +1,17 @@
+program: test.py
+method: grid
+metric:
+  name: quantized_acc
+  goal: maximize
+parameters:
+  weight_quant_bits:
+    values: [2, 3, 4, 6, 8]
+  activation_quant_bits:
+    values: [2, 3, 4, 6, 8]
+  prune_sparsity:
+    values: [0.0]
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
