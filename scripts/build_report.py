@@ -32,15 +32,23 @@ def load_csv(path):
 
 
 def pick_best_config(rows, fp32_acc, max_drop=3.0):
+    """Hard-gates on accuracy (must be within `max_drop` points of the FP32
+    baseline), then among the qualifying configs maximizes the *joint*
+    weight x activation compression ratio. If nothing qualifies, falls back to
+    a softer accuracy-weighted joint score across all configs."""
     def f(r):
         return float(r["quantized_acc"] if r["quantized_acc"] else 0)
 
-    def c(r):
-        return float(r["compression_ratio"] if r["compression_ratio"] else 0)
+    def w(r):
+        return float(r["weight_compression_ratio"] if r["weight_compression_ratio"] else 0)
+
+    def a(r):
+        return float(r["activation_compression_ratio"] if r["activation_compression_ratio"] else 0)
 
     within = [r for r in rows if fp32_acc - f(r) <= max_drop]
-    pool = within if within else rows
-    return max(pool, key=lambda r: c(r) * (f(r) / 100.0) if not within else c(r))
+    if within:
+        return max(within, key=lambda r: w(r) * a(r))
+    return max(rows, key=lambda r: w(r) * a(r) * (f(r) / 100.0))
 
 
 def build(args):
@@ -195,19 +203,24 @@ def build(args):
         f"best accuracy/compression tradeoff from the Q3 sweep (highest compression "
         f"ratio within 3 accuracy points of the FP32 baseline, or the best "
         f"accuracy-weighted compression score otherwise).", body))
+    cell = ParagraphStyle(name="Cell", parent=body, fontSize=9, leading=11.5)
     q4_rows = [
-        ["(a) Weight compression ratio", f"{float(best_cfg['weight_compression_ratio']):.2f}x"],
-        ["(b) Activation compression ratio", f"{float(best_cfg['activation_compression_ratio']):.2f}x"
-                                              " (measured via forward hooks capturing every quantized "
-                                              "ReLU6 output tensor for one representative 128-image test "
-                                              "batch; ratio = fp32 bytes / bit-packed bytes for those "
-                                              "same elements)"],
-        ["(c) Accuracy at this configuration", f"{float(best_cfg['quantized_acc']):.2f}% "
-                                                f"(FP32 baseline: {fp32_acc:.2f}%)"],
-        ["(d) Final approximate model size", f"{float(best_cfg['model_size_mb']):.3f} MB "
-                                              f"(FP32: {float(best_cfg['fp32_model_size_mb']):.3f} MB)"],
+        [Paragraph("(a) Weight compression ratio", cell),
+         Paragraph(f"{float(best_cfg['weight_compression_ratio']):.2f}x", cell)],
+        [Paragraph("(b) Activation compression ratio", cell),
+         Paragraph(f"{float(best_cfg['activation_compression_ratio']):.2f}x"
+                   " (measured via forward hooks capturing every quantized "
+                   "ReLU6 output tensor for one representative 128-image test "
+                   "batch; ratio = fp32 bytes / bit-packed bytes for those "
+                   "same elements)", cell)],
+        [Paragraph("(c) Accuracy at this configuration", cell),
+         Paragraph(f"{float(best_cfg['quantized_acc']):.2f}% "
+                   f"(FP32 baseline: {fp32_acc:.2f}%)", cell)],
+        [Paragraph("(d) Final approximate model size", cell),
+         Paragraph(f"{float(best_cfg['model_size_mb']):.3f} MB "
+                   f"(FP32: {float(best_cfg['fp32_model_size_mb']):.3f} MB)", cell)],
     ]
-    q4_tbl = Table(q4_rows, colWidths=[2.6 * inch, 3.7 * inch])
+    q4_tbl = Table(q4_rows, colWidths=[2.2 * inch, 4.1 * inch])
     q4_tbl.setStyle(TableStyle([
         ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),

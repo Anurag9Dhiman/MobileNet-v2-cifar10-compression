@@ -41,13 +41,14 @@ def main():
     for x in xs:
         ax.axvline(x, color="gray", linewidth=0.8, zorder=0)
 
+    ax.set_ylim(-0.12, 1.18)
     ax.set_xticks(xs)
     ax.set_xticklabels(dims, rotation=15, ha="right")
     ax.set_yticks([])
     for i, d in enumerate(dims):
-        ax.text(i, 1.03, f"{maxs[i]:.3g}", ha="center", va="bottom", fontsize=8, transform=ax.get_xaxis_transform())
-        ax.text(i, -0.06, f"{mins[i]:.3g}", ha="center", va="top", fontsize=8, transform=ax.get_xaxis_transform())
-    ax.set_title("MobileNetV2/CIFAR-10 quantization sweep (color = quantized_acc)")
+        ax.text(i, 1.10, f"{maxs[i]:.3g}", ha="center", va="bottom", fontsize=8, transform=ax.get_xaxis_transform())
+        ax.text(i, -0.10, f"{mins[i]:.3g}", ha="center", va="top", fontsize=8, transform=ax.get_xaxis_transform())
+    ax.set_title("MobileNetV2/CIFAR-10 quantization sweep (color = quantized_acc)", pad=16)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(acc.min(), acc.max()))
     fig.colorbar(sm, ax=ax, label="quantized_acc (%)")

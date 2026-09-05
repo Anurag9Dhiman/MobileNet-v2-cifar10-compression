@@ -83,7 +83,21 @@ wandb agent <sweep_id>        # runs the grid (25 configs: 5 weight bits x 5 act
 ```
 
 View the Parallel Coordinates chart under the sweep's page in the Wandb project
-`cs6886-a2-mobilenetv2-cifar10`.
+`cs6886-a2-mobilenetv2-cifar10`. Optional follow-up showing the pruning extension's
+effect at the sweep's best bit-width:
+
+```bash
+python test.py --weight_quant_bits 4 --activation_quant_bits 4 --prune_sparsity 0.3
+python test.py --weight_quant_bits 4 --activation_quant_bits 4 --prune_sparsity 0.5
+```
+
+Then export results and build the final report:
+
+```bash
+python scripts/export_sweep_results.py    # -> results/sweep_results.csv
+python scripts/plot_parallel_coords.py     # -> results/parallel_coordinates.png
+PYTHONPATH=. python scripts/build_report.py  # -> report.pdf
+```
 
 ## Design choices (summary — full writeup in the report PDF)
 
@@ -107,12 +121,15 @@ View the Parallel Coordinates chart under the sweep's page in the Wandb project
 
 ## Results
 
-_Filled in after the baseline training run and the bit-width sweep complete —
-see `report.pdf` for the full writeup (Q1-Q5) with figures and tables._
+Full writeup (Q1-Q5) with figures and tables: [report.pdf](report.pdf).
 
-- FP32 baseline test top-1 accuracy: TBD
-- Chosen best compression config: TBD
-- Final approximate model size after compression: TBD
+- FP32 baseline test top-1 accuracy: **94.07%** (80 epochs, seed 42)
+- Chosen best compression config: **weight_quant_bits=4, activation_quant_bits=4,
+  prune_sparsity=0** — 92.42% accuracy (-1.65pp vs FP32), 7.71x weight compression,
+  7.83x activation compression
+- Final approximate model size after compression: **1.089 MB** (FP32: 8.402 MB)
+- Full 25-point bit-width sweep + pruning follow-up: `results/sweep_results.csv`,
+  `results/parallel_coordinates.png`; live chart at the Wandb project above.
 
 ## Unit tests
 
