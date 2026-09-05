@@ -22,7 +22,9 @@ def magnitude_prune_(model, sparsity, exempt_modules=()):
             if k == 0:
                 masks[module] = torch.ones_like(w, dtype=torch.bool)
                 continue
-            threshold = w.abs().flatten().kthvalue(k).values
+            # kthvalue is unimplemented on MPS; the flattened weight tensor is
+            # small, so compute the threshold on CPU and compare back on-device.
+            threshold = w.abs().flatten().cpu().kthvalue(k).values.item()
             mask = w.abs() > threshold
             w.mul_(mask)
             masks[module] = mask
