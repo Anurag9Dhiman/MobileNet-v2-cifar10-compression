@@ -1,4 +1,5 @@
 program: test.py
+project: cs6886-a2-mobilenetv2-cifar10
 method: grid
 metric:
   name: quantized_acc
