@@ -73,7 +73,7 @@ Seed is fixed to `42` (torch/numpy/random) for reproducibility.
 
 ```bash
 python -m src.train \
-  --epochs 120 --batch_size 128 --lr 0.1 --wd 5e-4 \
+  --epochs 80 --batch_size 128 --lr 0.1 --wd 5e-4 \
   --warmup_epochs 5 --label_smoothing 0.1 --seed 42 \
   --wandb_mode online   # or "disabled" to skip wandb entirely
 ```

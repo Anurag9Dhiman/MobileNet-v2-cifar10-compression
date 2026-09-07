@@ -1,7 +1,7 @@
 """Baseline FP32 training of MobileNetV2 on CIFAR-10.
 
 Example:
-    python -m src.train --epochs 120 --batch_size 128 --lr 0.1
+    python -m src.train --epochs 80 --batch_size 128 --lr 0.1
 """
 import argparse
 import math
@@ -52,7 +52,7 @@ def evaluate(model, loader, device, criterion):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--epochs", type=int, default=120)
+    ap.add_argument("--epochs", type=int, default=80)
     ap.add_argument("--batch_size", type=int, default=128)
     ap.add_argument("--lr", type=float, default=0.1)
     ap.add_argument("--wd", type=float, default=5e-4)
