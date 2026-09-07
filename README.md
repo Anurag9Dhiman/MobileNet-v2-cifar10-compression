@@ -25,9 +25,8 @@ The codebase is strictly modularized with clear separation across training, eval
   - `src/compress_utils.py`: Genuine numpy bit-level packing (`pack_bits`, `unpack_bits`), 1-bit pruning mask packing, and exact storage/overhead accounting (including fp16 scales and masks).
 - **Testing & Verification**:
   - `tests/test_quant.py`: Unit tests for bit-packing round-trip exactness ({2,3,4,6,8} bits), monotonic quantization error decay, and pruning storage savings.
-- **Utilities & Scripts**:
+- **Utilities**:
   - `src/utils.py`: Deterministic seed configuration, running average meters, top-1 accuracy, CSV logger.
-  - `scripts/`: Scripts for plotting loss/accuracy curves, exporting Wandb sweep results, plotting parallel coordinates, and building `report.pdf`.
 
 ```
 src/
@@ -40,10 +39,8 @@ src/
   utils.py            Seeding, meters, CSV logger
 test.py               PTQ (+pruning) evaluation CLI (Evaluation)
 sweep.yaml            Wandb grid sweep over bit-widths
-scripts/              Plotting curves, export sweeps, and building report.pdf
 tests/test_quant.py   Unit tests for quantization, pruning, and bit-packing
 checkpoints/best.pth  Trained FP32 baseline checkpoint
-results/              Training CSV logs, figures, sweep CSV export
 ```
 
 ### (b) Environment, Dependencies & Seed Configuration
@@ -53,9 +50,8 @@ results/              Training CSV logs, figures, sweep CSV export
   - `torch==2.8.0`
   - `torchvision==0.23.0`
   - `numpy==2.4.4`
-  - `matplotlib==3.10.9`
   - `wandb==0.24.0`
-  - `reportlab==4.4.4`
+  - `tqdm`
 - **Installation**:
   ```bash
   pip install -r requirements.txt
@@ -78,12 +74,7 @@ python -m src.train \
   --wandb_mode online   # or "disabled" to skip wandb entirely
 ```
 
-Saves the best (by test top-1) checkpoint to `checkpoints/best.pth` and a
-per-epoch CSV to `results/train_log.csv`. Then:
-
-```bash
-python scripts/make_curves.py   # writes results/loss_curve.png, results/accuracy_curve.png
-```
+Saves the best (by test top-1) checkpoint to `checkpoints/best.pth` and a per-epoch CSV to `train_log.csv`.
 
 ## Reproduce: compression evaluation (single config)
 
@@ -117,15 +108,7 @@ python test.py --weight_quant_bits 4 --activation_quant_bits 4 --prune_sparsity 
 python test.py --weight_quant_bits 4 --activation_quant_bits 4 --prune_sparsity 0.5
 ```
 
-Then export results and build the final report:
-
-```bash
-python scripts/export_sweep_results.py    # -> results/sweep_results.csv
-python scripts/plot_parallel_coords.py     # -> results/parallel_coordinates.png
-PYTHONPATH=. python scripts/build_report.py  # -> report.pdf
-```
-
-## Design choices (summary — full writeup in the report PDF)
+## Design choices
 
 - **Model**: MobileNetV2, stem conv stride 2->1 and the `(t=6,c=24,n=2)` stage's
   stride 2->1 (8x total downsample instead of 32x, since ImageNet's 32x would
@@ -145,17 +128,13 @@ PYTHONPATH=. python scripts/build_report.py  # -> report.pdf
   bit-packed via numpy bit-shifting (`src/compress_utils.py`), not divided by 8
   in theory — reported sizes are measured byte counts.
 
-## Results
-
-Full writeup (Q1-Q5) with figures and tables: [report.pdf](report.pdf).
+## Results summary
 
 - FP32 baseline test top-1 accuracy: **94.07%** (80 epochs, seed 42)
 - Chosen best compression config: **weight_quant_bits=4, activation_quant_bits=4,
   prune_sparsity=0** — 92.42% accuracy (-1.65pp vs FP32), 7.71x weight compression,
   7.83x activation compression
 - Final approximate model size after compression: **1.089 MB** (FP32: 8.402 MB)
-- Full 25-point bit-width sweep + pruning follow-up: `results/sweep_results.csv`,
-  `results/parallel_coordinates.png`; live chart at the Wandb project above.
 
 ## Unit tests
 

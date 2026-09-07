@@ -63,7 +63,7 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--data_dir", type=str, default="./data")
     ap.add_argument("--out_dir", type=str, default="./checkpoints")
-    ap.add_argument("--log_csv", type=str, default="./results/train_log.csv")
+    ap.add_argument("--log_csv", type=str, default="./train_log.csv")
     ap.add_argument("--num_workers", type=int, default=4)
     ap.add_argument("--wandb_mode", type=str, default="online", choices=["online", "offline", "disabled"])
     ap.add_argument("--wandb_project", type=str, default="cs6886-a2-mobilenetv2-cifar10")
@@ -74,7 +74,8 @@ def main():
     print(f"device: {device}")
 
     os.makedirs(args.out_dir, exist_ok=True)
-    os.makedirs(os.path.dirname(args.log_csv), exist_ok=True)
+    if os.path.dirname(args.log_csv):
+        os.makedirs(os.path.dirname(args.log_csv), exist_ok=True)
 
     train_loader, test_loader = get_dataloaders(
         data_dir=args.data_dir, batch_size=args.batch_size,
