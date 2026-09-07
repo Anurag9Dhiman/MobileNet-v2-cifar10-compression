@@ -1,4 +1,4 @@
-# MobileNetV2 on CIFAR-10 + Hand-Written Compression
+# MobileNetV2 on CIFAR-10 
 
 **Repository**: https://github.com/Anurag9Dhiman/MobileNet-v2-cifar10-compression  
 **Course**: CS6886 (System Engineering for Deep Learning) — Assignment 2
