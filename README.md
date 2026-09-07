@@ -3,7 +3,7 @@
 **Repository**: https://github.com/Anurag9Dhiman/MobileNet-v2-cifar10-compression  
 **Course**: CS6886 (System Engineering for Deep Learning) — Assignment 2
 
-Trains MobileNetV2 (adapted for CIFAR-10's 32x32 inputs) from scratch, then applies a **hand-written** post-training compression pipeline — per-channel weight quantization, calibrated per-tensor activation quantization, and magnitude pruning — with no compression library/API calls anywhere in `src/`.
+Trains MobileNetV2 (adapted for CIFAR-10's 32x32 inputs) from scratch, then applies a post-training compression pipeline — per-channel weight quantization, calibrated per-tensor activation quantization, and magnitude pruning — with no compression library/API calls anywhere in `src/`.
 
 ---
 
