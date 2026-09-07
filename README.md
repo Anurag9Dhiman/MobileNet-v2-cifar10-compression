@@ -1,44 +1,70 @@
 # MobileNetV2 on CIFAR-10 + Hand-Written Compression
 
-CS6886 (System Engineering for Deep Learning) — Assignment 2. Trains MobileNetV2
-(adapted for CIFAR-10's 32x32 inputs) from scratch, then applies a **hand-written**
-post-training compression pipeline — per-channel weight quantization, calibrated
-per-tensor activation quantization, and magnitude pruning — with no compression
-library/API calls anywhere in `src/`.
+**Repository**: https://github.com/Anurag9Dhiman/MobileNet-v2-cifar10-compression  
+**Course**: CS6886 (System Engineering for Deep Learning) — Assignment 2
 
-## Environment
+Trains MobileNetV2 (adapted for CIFAR-10's 32x32 inputs) from scratch, then applies a **hand-written** post-training compression pipeline — per-channel weight quantization, calibrated per-tensor activation quantization, and magnitude pruning — with no compression library/API calls anywhere in `src/`.
 
-- Python 3.13.7, macOS (Apple Silicon, MPS backend; no CUDA used)
-- Exact dependency versions in [requirements.txt](requirements.txt):
-  `torch==2.8.0`, `torchvision==0.23.0`, `numpy==2.4.4`, `matplotlib==3.10.9`,
-  `wandb==0.24.0`, `reportlab==4.4.4`
-- `pip install -r requirements.txt`
+---
 
-If you hit an SSL certificate error downloading CIFAR-10 on macOS's python.org
-build, point Python at the `certifi` bundle before running anything:
-```bash
-export SSL_CERT_FILE=$(python3 -c "import certifi; print(certifi.where())")
-```
+## Question 5: Reproducibility & Repository Overview
 
-## Repository layout
+### (a) Codebase Architecture & Separation of Concerns
+
+The codebase is strictly modularized with clear separation across training, evaluation, and compression:
+
+- **Training**:
+  - `src/data.py`: CIFAR-10 dataset downloading, data augmentations (RandomCrop, RandomHorizontalFlip, normalization), DataLoader instantiation, and unaugmented calibration split.
+  - `src/model.py`: From-scratch MobileNetV2 architecture adapted for 32x32 inputs (8x total spatial downsampling to prevent collapse).
+  - `src/train.py`: Full FP32 baseline training pipeline (SGD with momentum, linear warmup + cosine annealing scheduler, weight decay excluded on 1D/BatchNorm params, checkpointing).
+- **Evaluation**:
+  - `test.py`: Standalone CLI to load checkpoints, run PTQ calibration, evaluate quantized test top-1 accuracy on CIFAR-10, measure execution time, and bit-pack activations for accurate storage accounting.
+- **Compression (Zero External Libraries)**:
+  - `src/quant.py`: Hand-written per-output-channel symmetric weight quantization and calibrated per-tensor asymmetric activation quantization with EMA min/max calibration.
+  - `src/prune.py`: Configurable magnitude-based unstructured weight pruning applied before quantization.
+  - `src/compress_utils.py`: Genuine numpy bit-level packing (`pack_bits`, `unpack_bits`), 1-bit pruning mask packing, and exact storage/overhead accounting (including fp16 scales and masks).
+- **Testing & Verification**:
+  - `tests/test_quant.py`: Unit tests for bit-packing round-trip exactness ({2,3,4,6,8} bits), monotonic quantization error decay, and pruning storage savings.
+- **Utilities & Scripts**:
+  - `src/utils.py`: Deterministic seed configuration, running average meters, top-1 accuracy, CSV logger.
+  - `scripts/`: Scripts for plotting loss/accuracy curves, exporting Wandb sweep results, plotting parallel coordinates, and building `report.pdf`.
 
 ```
 src/
-  data.py             CIFAR-10 loaders + transforms
-  model.py            MobileNetV2, adapted for CIFAR-10 (from scratch)
-  train.py            baseline FP32 training loop
-  quant.py            per-channel weight quant + calibrated activation quant
-  prune.py            magnitude pruning (the "own extension")
-  compress_utils.py   real bit-packing + storage/compression-ratio accounting
-  utils.py            seeding, meters, CSV logger
-test.py               PTQ (+pruning) evaluation CLI
-sweep.yaml            wandb grid sweep over bit-widths
-scripts/
-  make_curves.py      loss/accuracy curve figures from the training CSV log
-  build_report.py     assembles report.pdf
-tests/test_quant.py   unit checks for quantization/pruning/packing correctness
-checkpoints/best.pth  best FP32 checkpoint (committed)
-results/              training log CSV, figures, sweep exports
+  data.py             CIFAR-10 loaders + transforms (Training)
+  model.py            MobileNetV2, adapted for CIFAR-10 (Training)
+  train.py            Baseline FP32 training loop (Training)
+  quant.py            Per-channel weight quant + calibrated activation quant (Compression)
+  prune.py            Magnitude pruning extension (Compression)
+  compress_utils.py   Real bit-packing + storage accounting (Compression)
+  utils.py            Seeding, meters, CSV logger
+test.py               PTQ (+pruning) evaluation CLI (Evaluation)
+sweep.yaml            Wandb grid sweep over bit-widths
+scripts/              Plotting curves, export sweeps, and building report.pdf
+tests/test_quant.py   Unit tests for quantization, pruning, and bit-packing
+checkpoints/best.pth  Trained FP32 baseline checkpoint
+results/              Training CSV logs, figures, sweep CSV export
+```
+
+### (b) Environment, Dependencies & Seed Configuration
+
+- **Environment**: Python 3.13.7, macOS (Apple Silicon, MPS backend; also compatible with CUDA and CPU).
+- **Dependencies**: Pinned in `requirements.txt`:
+  - `torch==2.8.0`
+  - `torchvision==0.23.0`
+  - `numpy==2.4.4`
+  - `matplotlib==3.10.9`
+  - `wandb==0.24.0`
+  - `reportlab==4.4.4`
+- **Installation**:
+  ```bash
+  pip install -r requirements.txt
+  ```
+- **Seed Configuration**: Globally fixed seed `42` configured via `src/utils.py::seed_everything(seed=42)` across Python's `random`, `numpy`, `torch.manual_seed`, `torch.mps.manual_seed`, and PyTorch DataLoader `torch.Generator` instances for exact determinism.
+
+If you encounter an SSL certificate error downloading CIFAR-10 on macOS python.org builds:
+```bash
+export SSL_CERT_FILE=$(python3 -c "import certifi; print(certifi.where())")
 ```
 
 ## Reproduce: baseline training

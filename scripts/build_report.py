@@ -22,7 +22,7 @@ from reportlab.lib.units import inch
 from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Image,
                                   Table, TableStyle, PageBreak)
 
-GITHUB_URL = "https://github.com/Anurag9Dhiman/mobilenetv2-cifar10-compression"
+GITHUB_URL = "https://github.com/Anurag9Dhiman/MobileNet-v2-cifar10-compression"
 WANDB_PROJECT_URL = "https://wandb.ai/anuragdhiman666-indian-institute-of-technology-madras/cs6886-a2-mobilenetv2-cifar10"
 
 
@@ -232,15 +232,32 @@ def build(args):
 
     # ---------------- Q5 ----------------
     story.append(Paragraph("Question 5 — Reproducibility & Repository", styles["H1"]))
+    story.append(Paragraph(f"GitHub repository: <link href='{GITHUB_URL}'>{GITHUB_URL}</link>", body))
+    story.append(Spacer(1, 0.08 * inch))
+    story.append(Paragraph("(a) Clean, modular, well-commented codebase with separation of training, evaluation, and compression", styles["H2"]))
     story.append(Paragraph(
-        f"Code is organized as src/data.py, src/model.py, src/train.py (training), "
-        f"src/quant.py + src/prune.py + src/compress_utils.py (compression), and "
-        f"test.py (evaluation) — no compression/quantization library calls anywhere. "
-        f"README.md documents exact reproduce commands, dependency versions, and the "
-        f"fixed seed (42). Unit tests in tests/test_quant.py check pack/unpack "
-        f"round-trip exactness, monotonic quantization error vs. bit-width, and "
-        f"pruning's storage reduction. GitHub repository: "
-        f"<link href='{GITHUB_URL}'>{GITHUB_URL}</link>.", body))
+        "The codebase is cleanly organized with explicit separation of concerns and zero external compression libraries:<br/>"
+        "• <b>Training</b>: <code>src/data.py</code> (CIFAR-10 augmentation, data loaders, and unaugmented calibration loader), "
+        "<code>src/model.py</code> (from-scratch CIFAR-adapted MobileNetV2 with 8x downsampling), and "
+        "<code>src/train.py</code> (SGD with momentum, warmup + cosine annealing, weight decay exclusion for BN/biases, and checkpointing).<br/>"
+        "• <b>Evaluation</b>: <code>test.py</code> (standalone evaluation CLI; loads weights, executes calibration, logs metrics, "
+        "and computes exact test top-1 accuracy without modifying source weights permanently).<br/>"
+        "• <b>Compression</b>: <code>src/quant.py</code> (hand-written per-output-channel symmetric weight quantization and "
+        "calibrated per-tensor asymmetric activation quantization), <code>src/prune.py</code> (magnitude-based unstructured pruning), "
+        "and <code>src/compress_utils.py</code> (real numpy bit-level packing and exact storage/overhead accounting).<br/>"
+        "• <b>Testing</b>: <code>tests/test_quant.py</code> (unit tests verifying bit-packing round-trip exactness across bit-widths "
+        "{2,3,4,6,8}, monotonic error decay, activation calibration accuracy, and pruning storage reduction).", body))
+    story.append(Spacer(1, 0.08 * inch))
+    story.append(Paragraph("(b) README with exact commands, environment, dependency versions, and seed configuration", styles["H2"]))
+    story.append(Paragraph(
+        "All instructions to reproduce every stage of the project are documented in <code>README.md</code>:<br/>"
+        "• <b>Environment & Dependencies</b>: Validated on Python 3.13.7 (macOS Apple Silicon MPS; CUDA/CPU compatible). "
+        "Pinned dependency versions in <code>requirements.txt</code>: <code>torch==2.8.0</code>, <code>torchvision==0.23.0</code>, "
+        "<code>numpy==2.4.4</code>, <code>matplotlib==3.10.9</code>, <code>wandb==0.24.0</code>, <code>reportlab==4.4.4</code>.<br/>"
+        "• <b>Seed Configuration</b>: Globally fixed seed <code>42</code> (via <code>src/utils.py::seed_everything</code>) across "
+        "Python <code>random</code>, NumPy, PyTorch CPU/MPS/CUDA generators, and DataLoader worker generators for full determinism.<br/>"
+        "• <b>Exact Commands</b>: Verifiable commands for baseline training, single-configuration evaluation, bit-width grid sweep, "
+        "sweep result export, parallel-coordinates figure generation, and unit testing.", body))
 
     doc = SimpleDocTemplate(args.out_pdf, pagesize=LETTER,
                              topMargin=0.7 * inch, bottomMargin=0.7 * inch,
